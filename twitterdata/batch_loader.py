@@ -1,4 +1,5 @@
 import tweepy
+import twitterdata.tweet_sender as sender
 
 
 class BatchTweetLoader:
@@ -13,7 +14,7 @@ class BatchTweetLoader:
 
     def _send_tweets(self, tweets):
         for tweet in tweets:
-            self._send_tweet(tweet)
+            sender.send_tweet(tweet)
 
     def _send_tweet(self, tweet):
         print(tweet)
