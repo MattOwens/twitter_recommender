@@ -1,4 +1,3 @@
-import tweepy
 import twitterdata.tweet_sender as sender
 
 

@@ -7,7 +7,7 @@ def send_tweet(tweet):
     print('Sending a tweet...')
     future = P.send('incoming_tweets', value=tweet)
     P.flush(timeout=30)
-    # Block for 'synchronous' sends
+    # Block for 'synchronous' sends (I think I did this because sending async wasn't working?)
     try:
         record_metadata = future.get(timeout=10)
     except KafkaError:
@@ -22,4 +22,3 @@ def serialize_tweet(tweet):
 
 
 P = KafkaProducer(bootstrap_servers='localhost:9092',value_serializer=serialize_tweet)
-print('Hey you imported tweet_sender')

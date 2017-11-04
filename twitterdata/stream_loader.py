@@ -10,9 +10,14 @@ class StreamLoader():
         self.streamListener = TwitterStreamListener(self.streamingUsers)
         self.stream = tweepy.Stream(auth=self.api.auth, listener=self.streamListener)
 
+    def add_user(self, user):
+        users = self.streamingUsers
+        users.append(user)
+        self.update_users(users)
+
     def update_users(self, usernames):
         self.streamingUsers = [user['id_str'] for user in self.api.lookup_users(screen_names=usernames)]
-        print(self.streamingUsers)
+        self.stream.disconnect() #need a better way to do this, but it'll do for now
         self._start_stream() # need to check this, since it might not work if you update users more than once
 
     def _start_stream(self):
@@ -27,6 +32,7 @@ class TwitterStreamListener(tweepy.StreamListener):
 
     def on_status(self, status):
         #if status['user']['id_str'] in self.users: # hack until I can figure out how to only subscribe to what I want
+        print("Hey I received a streamed tweet!")
         sender.send_tweet(status) # send all for now just so I can see messages flowing
 
     def update_users(self, users):
