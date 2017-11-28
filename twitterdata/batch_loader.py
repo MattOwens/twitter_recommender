@@ -11,9 +11,12 @@ class BatchTweetLoader:
         tweets = self.api.user_timeline(screen_name=user, include_rts=True)
         self._send_tweets(tweets)
 
+    def load_hashtag_tweets(self, hashtag):
+        print('Getting tweets for hashtag ', hashtag)
+        tweets = self.api.search(q=hashtag, count=100, lang="en")['statuses']#self.api.search(hashtag, count=100)
+        self._send_tweets(tweets)
+
     def _send_tweets(self, tweets):
         for tweet in tweets:
+            print(tweet)
             sender.send_tweet(tweet)
-
-    def _send_tweet(self, tweet):
-        print(tweet)

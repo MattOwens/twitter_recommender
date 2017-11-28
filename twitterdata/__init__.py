@@ -13,3 +13,8 @@ stream = stream_loader.StreamLoader(api)
 def subscribe_user(user):
     batch.load_tweets(user)
     stream.add_user(user)
+
+
+def subscribe_hashtag(hashtag):
+    batch.load_hashtag_tweets(hashtag)
+    stream.add_hashtag(hashtag)
