@@ -56,5 +56,11 @@ class TwitterStreamListener(tweepy.StreamListener):
     def on_error(self, status_code):
         logging.error('Error in streaming handler: Status code {}'.format(status_code))
 
+        if status_code == 420: # rate limited
+            logging.error('Rate limited, disconnecting stream')
+            # here I need to make sure the stream doesn't get restarted and set a timer of some sort
+            # before allowing it to be restarted
+            return False
+
     def update_users(self, users):
         self.users = users
