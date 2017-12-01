@@ -2,6 +2,7 @@ from kafka import KafkaConsumer
 from pymongo import MongoClient
 import threading
 import json
+import logging
 
 
 class TweetRecorder(threading.Thread):
@@ -13,13 +14,12 @@ class TweetRecorder(threading.Thread):
         self._db = self._client.twitter_recommender
 
     def run(self):
-        print('Tweet Recorder starting')
+        logging.log(logging.INFO, 'Tweet Recorder starting')
 
         self._consumer.subscribe(['incoming_tweets'])
-        print('Subscribed to incoming_tweets')
+
         while True:
             for message in self._consumer:
-                print('TweetRecorder consuming tweet')
                 topic = message[0] # I hope that doesn't change
 
                 if topic == 'incoming_tweets':
@@ -29,6 +29,7 @@ class TweetRecorder(threading.Thread):
 
     def write_incoming_tweet(self, message):
         tweet = message[6]
+        logging.log(logging.INFO, 'Saving tweet {0} to database'.format(tweet['id_str']))
         doc = {"tweet_id":tweet['id'],
                "timestamp":tweet['created_at'],
                "user_id":tweet['user']['id'],
@@ -38,7 +39,7 @@ class TweetRecorder(threading.Thread):
                "user_mentions":tweet['entities']['user_mentions']}
 
         doc_id = self._db.incoming_tweets.insert_one(doc).inserted_id
-        print('Inserted doc', doc_id)
+        logging.log(logging.INFO, 'Inserted doc {0} into incoming_tweets'.format(doc_id))
 
     def decode_to_json(self, value):
         return json.loads(value)

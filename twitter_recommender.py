@@ -9,11 +9,11 @@ if __name__ == "__main__":
     recorder = tweet_recorder.TweetRecorder()
     recorder.start()
 
-    #twitterdata.subscribe_user("SenToomey")
-    #twitterdata.subscribe_user("daylinLeach")
-    #twitterdata.subscribe_user("POTUS")
-    #twitterdata.subscribe_user("realDonaldTrump")
-    #twitterdata.subscribe_user("NBA")
+    twitterdata.subscribe_user("SenToomey")
+    twitterdata.subscribe_user("daylinLeach")
+    twitterdata.subscribe_user("POTUS")
+    twitterdata.subscribe_user("realDonaldTrump")
+    twitterdata.subscribe_user("NBA")
 
     twitterdata.subscribe_hashtag("#netneutrality")
     twitterdata.subscribe_hashtag("#savetheinternet")

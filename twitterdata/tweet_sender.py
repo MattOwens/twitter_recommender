@@ -1,10 +1,11 @@
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
 import json
+import logging
 
 
 def send_tweet(tweet):
-    print('Sending a tweet...')
+    logging.log(logging.INFO, 'Sending tweet {0}'.format(tweet['id_str']))
     future = P.send('incoming_tweets', value=tweet)
     P.flush(timeout=30)
     # Block for 'synchronous' sends (I think I did this because sending async wasn't working?)
@@ -17,7 +18,6 @@ def send_tweet(tweet):
 
 
 def serialize_tweet(tweet):
-    print('Serializing tweet')
     return json.dumps(tweet).encode('utf-8')
 
 

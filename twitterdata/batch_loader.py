@@ -18,5 +18,4 @@ class BatchTweetLoader:
 
     def _send_tweets(self, tweets):
         for tweet in tweets:
-            print(tweet)
             sender.send_tweet(tweet)
