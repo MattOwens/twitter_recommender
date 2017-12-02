@@ -1,7 +1,7 @@
 To start kafka:
 
 cd to kafka directory
-./bin/zookerper-server-start.sh config/zookerper.properties
+./bin/zookeeper-server-start.sh config/zookeeper.properties
 ./bin/kafka-server-start.sh config/server.properties
 
 
@@ -12,4 +12,6 @@ tail /var/log/mongodb/mongod.log to make sure it started
 mongo
 use twitter_recommender
 db.incoming_tweets.find()
+db.incoming_tweets.deleteMany({})
+
 

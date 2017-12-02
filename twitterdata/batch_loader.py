@@ -1,5 +1,7 @@
 import twitterdata.tweet_sender as sender
 
+tweets_to_get = 100
+
 
 class BatchTweetLoader:
 
@@ -8,12 +10,12 @@ class BatchTweetLoader:
 
     def load_tweets(self, user):
         print('Getting tweets for user', user)
-        tweets = self.api.user_timeline(screen_name=user, include_rts=True)
+        tweets = self.api.user_timeline(screen_name=user, count=tweets_to_get, include_rts=True)
         self._send_tweets(tweets)
 
     def load_hashtag_tweets(self, hashtag):
         print('Getting tweets for hashtag ', hashtag)
-        tweets = self.api.search(q=hashtag, count=100, lang="en")['statuses']#self.api.search(hashtag, count=100)
+        tweets = self.api.search(q=hashtag, count=tweets_to_get, lang="en")['statuses']
         self._send_tweets(tweets)
 
     def _send_tweets(self, tweets):
