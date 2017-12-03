@@ -57,7 +57,7 @@ class TwitterStreamListener(tweepy.StreamListener):
         print("Hey I received a streamed tweet! on_data")
         print(json.loads(data))
         relevant = self._is_relevant(json.loads(data))
-        print('Tweet is relevant: ', relevant)
+        
         if relevant:
             sender.send_tweet(json.loads(data))
 
@@ -79,11 +79,10 @@ class TwitterStreamListener(tweepy.StreamListener):
     def _is_relevant(self, tweet):
         if tweet['user']['id'] in self._user_ids:
             return True
-        if 'hashtags' not in tweet:
-            return False
 
-        for hashtag in tweet['hashtags']:
-            logging.log(logging.INFO, 'Tweet {} has hashtag'.format(tweet['id'], hashtag))
+        for entity in tweet['entities']['hashtags']:
+            hashtag = '#{}'.format(entity['text'])
+            logging.log(logging.INFO, 'Tweet {} has hashtag {}'.format(tweet['id'], hashtag))
             if hashtag in self._hashtags:
                 return True
 
