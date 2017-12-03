@@ -1,0 +1,2 @@
+type = "line-corpus"
+metadata = [{name = "label", type = "string"}, {name = "timestamp", type = "string"}]

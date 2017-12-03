@@ -1,3 +1,9 @@
+import os
+
+data_directory = os.path.join(os.path.dirname(__file__), 'tweet_data')
+tweet_path = os.path.join(data_directory, 'tweet_data.dat')
+metadata_path = os.path.join(data_directory, 'metadata.dat')
+
 class TweetAnalyzer: # come up with better name
 
     def __init__(self, loader, seed_users, seed_hashtags):
@@ -26,3 +32,22 @@ class TweetAnalyzer: # come up with better name
 
         print('Users mentioned in this snapshot: ', users_mentioned)
         print('Hashtags used in this snapshot: ', hashtags_used)
+
+        self._update_corpus(by_user, by_hashtag)
+
+    def _update_corpus(self, by_user, by_hashtag):
+        # intentionally duplicates tweets - will help with similarity when we have multiple hashtags in the same tweet
+        # or when a user we care about uses a hashtag we care about
+        with open(tweet_path, 'a+') as tweet_data, \
+                open(metadata_path, 'a+') as metadata:
+            for user in by_user:
+                for tweet in by_user[user]:
+                    text = tweet['full_text'] if 'full_text' in tweet else tweet['text']
+                    tweet_data.write(text.replace('\n', ' ') + '\n')
+                    metadata.write('{}\t{}\n'.format(tweet['user']['id_str'], tweet['created_at']))
+            for hashtag in by_hashtag:
+                for tweet in by_hashtag[hashtag]:
+                    text = tweet['full_text'] if 'full_text' in tweet else tweet['text']
+                    tweet_data.write(text.replace('\n', ' ') + '\n')
+                    metadata.write('{}\t{}\n'.format(hashtag, tweet['created_at']))
+

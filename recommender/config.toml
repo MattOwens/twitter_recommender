@@ -1,0 +1,3 @@
+dataset = "tweet_data"
+corpus = "line.toml"
+index = "idx"

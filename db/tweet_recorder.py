@@ -30,11 +30,12 @@ class TweetRecorder(threading.Thread):
     def write_incoming_tweet(self, message):
         tweet = message[6]
         logging.log(logging.INFO, 'Saving tweet {0} to database'.format(tweet['id_str']))
+        text = tweet['full_text'] if 'full_text' in tweet else tweet['text']
         doc = {"tweet_id":tweet['id'],
                "timestamp":tweet['created_at'],
                "user_id":tweet['user']['id'],
                "user_screen_name":tweet['user']['screen_name'],
-               "text":tweet['text'],
+               "text":text,
                "hashtags":tweet['entities']['hashtags'],
                "user_mentions":tweet['entities']['user_mentions']}
 

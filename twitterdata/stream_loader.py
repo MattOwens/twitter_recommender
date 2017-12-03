@@ -56,7 +56,7 @@ class TwitterStreamListener(tweepy.StreamListener):
 
     def on_data(self, data):
         #print("Hey I received a streamed tweet! on_data")
-        #print(json.loads(data))
+        #print(json.loads(tweet_data))
         relevant = self._is_relevant(json.loads(data))
 
         if relevant:
