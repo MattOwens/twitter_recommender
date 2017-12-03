@@ -49,5 +49,5 @@ class TweetAnalyzer: # come up with better name
                 for tweet in by_hashtag[hashtag]:
                     text = tweet['full_text'] if 'full_text' in tweet else tweet['text']
                     tweet_data.write(text.replace('\n', ' ') + '\n')
-                    metadata.write('{}\t{}\n'.format(hashtag, tweet['created_at']))
+                    metadata.write('#{}\t{}\n'.format(hashtag, tweet['created_at']))
 

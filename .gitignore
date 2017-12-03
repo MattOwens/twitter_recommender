@@ -2,4 +2,4 @@
 __pycache__/
 hidden_keys.py
 idx/
-twitter_data.dat
+*.dat
