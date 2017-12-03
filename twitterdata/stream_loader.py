@@ -12,8 +12,8 @@ class StreamLoader():
         self.user_ids = []
         self.hashtags = []
         self._requests_paused = False
-        self.streamListener = TwitterStreamListener(self.usernames)
-        self.stream = tweepy.Stream(auth=self.api.auth, listener=self.streamListener,parser=tweepy.parsers.JSONParser())
+        self.stream_listener = TwitterStreamListener()
+        self.stream = tweepy.Stream(auth=self.api.auth, listener=self.stream_listener, parser=tweepy.parsers.JSONParser())
 
     def start_batch_update(self):
         logging.log(logging.INFO, 'stream loader paused for batch update')
@@ -40,21 +40,26 @@ class StreamLoader():
 
     def _start_stream(self):
         self.user_ids = [user['id_str'] for user in self.api.lookup_users(screen_names=self.usernames)]
+        self.stream_listener.update_users(self.user_ids)
+        self.stream_listener.update_hashtags(self.hashtags)
         self.stream.disconnect()
         self.stream.filter(follow=self.user_ids, track=self.hashtags, async=True)
 
 
 class TwitterStreamListener(tweepy.StreamListener):
 
-    def __init__(self, users):
+    def __init__(self):
         tweepy.StreamListener.__init__(self)
-        self.users = users
+        self._user_ids = []
+        self._hashtags = []
 
     def on_data(self, data):
-        #if status['user']['id_str'] in self.users: # hack until I can figure out how to only subscribe to what I want
         print("Hey I received a streamed tweet! on_data")
         print(json.loads(data))
-        sender.send_tweet(json.loads(data)) # send all for now just so I can see messages flowing
+        relevant = self._is_relevant(json.loads(data))
+        print('Tweet is relevant: ', relevant)
+        if relevant:
+            sender.send_tweet(json.loads(data))
 
     def on_error(self, status_code):
         logging.error('Error in streaming handler: Status code {}'.format(status_code))
@@ -66,4 +71,20 @@ class TwitterStreamListener(tweepy.StreamListener):
             return False
 
     def update_users(self, users):
-        self.users = users
+        self._user_ids = users
+
+    def update_hashtags(self, hashtags):
+        self._hashtags = hashtags
+
+    def _is_relevant(self, tweet):
+        if tweet['user']['id'] in self._user_ids:
+            return True
+        if 'hashtags' not in tweet:
+            return False
+
+        for hashtag in tweet['hashtags']:
+            logging.log(logging.INFO, 'Tweet {} has hashtag'.format(tweet['id'], hashtag))
+            if hashtag in self._hashtags:
+                return True
+
+        return False
