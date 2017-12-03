@@ -39,6 +39,7 @@ class StreamLoader():
             self._start_stream()
 
     def _start_stream(self):
+        print(self.usernames)
         self.user_ids = [user['id_str'] for user in self.api.lookup_users(screen_names=self.usernames)]
         self.stream_listener.update_users(self.user_ids)
         self.stream_listener.update_hashtags(self.hashtags)
@@ -54,10 +55,10 @@ class TwitterStreamListener(tweepy.StreamListener):
         self._hashtags = []
 
     def on_data(self, data):
-        print("Hey I received a streamed tweet! on_data")
-        print(json.loads(data))
+        #print("Hey I received a streamed tweet! on_data")
+        #print(json.loads(data))
         relevant = self._is_relevant(json.loads(data))
-        
+
         if relevant:
             sender.send_tweet(json.loads(data))
 
