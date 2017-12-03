@@ -3,3 +3,5 @@ __pycache__/
 hidden_keys.py
 idx/
 *.dat
+run.sh
+*.pyc

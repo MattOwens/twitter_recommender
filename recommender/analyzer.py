@@ -1,8 +1,12 @@
 import os
+import metapy
+import shutil
 
-data_directory = os.path.join(os.path.dirname(__file__), 'tweet_data')
+this_directory = os.getcwd()
+data_directory = os.path.join(this_directory, 'tweet_data')
 tweet_path = os.path.join(data_directory, 'tweet_data.dat')
 metadata_path = os.path.join(data_directory, 'metadata.dat')
+index_path = os.path.join(this_directory, 'idx')
 
 class TweetAnalyzer: # come up with better name
 
@@ -34,6 +38,9 @@ class TweetAnalyzer: # come up with better name
         print('Hashtags used in this snapshot: ', hashtags_used)
 
         self._update_corpus(by_user, by_hashtag)
+        self._recreate_index()
+        self._run_recommendations()
+
 
     def _update_corpus(self, by_user, by_hashtag):
         # intentionally duplicates tweets - will help with similarity when we have multiple hashtags in the same tweet
@@ -51,3 +58,13 @@ class TweetAnalyzer: # come up with better name
                     tweet_data.write(text.replace('\n', ' ') + '\n')
                     metadata.write('#{}\t{}\n'.format(hashtag, tweet['created_at']))
 
+    def _recreate_index(self):
+        print('index path ', index_path)
+        print('current path ', os.getcwd())
+        if os.path.isdir(index_path):
+            shutil.rmtree(index_path)
+        self._idx = metapy.index.make_forward_index(os.path.join(this_directory, 'recommender', 'config.toml'))
+
+    def _run_recommendations(self):
+        dset = metapy.classify.MulticlassDataset(self._idx)
+        print(dset[0])

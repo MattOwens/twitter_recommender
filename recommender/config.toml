@@ -1,3 +1,20 @@
+prefix = "."
+stop-words="lemur-stopwords.txt"
+
 dataset = "tweet_data"
 corpus = "line.toml"
 index = "idx"
+
+[[analyzers]]
+method = "ngram-word"
+ngram = 1
+    [[analyzers.filter]]
+    type = "icu-tokenizer"
+
+    [[analyzers.filter]]
+    type = "lowercase"
+
+    [[analyzers.filter]]
+    type = "length"
+    min = 2
+    max = 32

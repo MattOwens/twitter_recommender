@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     twitterdata.load_config(users, hashtags)
 
-    time.sleep(60)
+    time.sleep(30)
 
     logging.log(logging.INFO, '---------TIMER ELAPSED, TAKING SNAPSHOT----------')
     controller.update()
