@@ -25,16 +25,16 @@ class NewTweetLoader:
         self._add_tweet_by_hashtag(tweet)
 
     def _add_tweet_by_user(self, tweet):
-        user_id = tweet['user']['id']
+        user = tweet['user']['screen_name']
 
-        if user_id not in self._tweets_by_user:
-            self._tweets_by_user[user_id] = [tweet]
+        if user not in self._tweets_by_user:
+            self._tweets_by_user[user] = [tweet]
         else:
-            self._tweets_by_user[user_id].append(tweet)
+            self._tweets_by_user[user].append(tweet)
 
     def _add_tweet_by_hashtag(self, tweet):
         for entity in tweet['entities']['hashtags']:
-            hashtag = entity['text']
+            hashtag = entity['text'].lower()
 
             if hashtag not in self._tweets_by_hashtag:
                 self._tweets_by_hashtag[hashtag] = [tweet]
