@@ -109,29 +109,61 @@ class TweetAnalyzer: # come up with better name
 
     def _run_recommendations(self):
         print('Running recommendations')
-        print(self._update_timestamp)
-        scores_by_seed_user = {}
+        scores_by_new_label_and_seed_label = {}
+
         total_scores = {}
+        max_scores = {}
 
         for user, user_tweets in self._new_by_user.items():
-            total_scores[user] = 0.0
+            scores_by_new_label_and_seed_label[user] = {}
+
+            total_score = 0.0
+            max_score = -1
+            max_label = ''
+
             for seed_user, seed_tweets in self._seed_by_user.items():
                 score = self.score(user_tweets, seed_tweets)
-                total_scores[user] += score
-                scores_by_seed_user[seed_user] = score
+                total_score += score
+                scores_by_new_label_and_seed_label[user][seed_user] = score
+                if score > max_score:
+                    max_score = score
+                    max_label = seed_user
 
-        scores_by_seed_hashtag = {}
+            for seed_hashtag, seed_tweets in self._seed_by_hashtag.items():
+                score = self.score(user_tweets, seed_tweets)
+                total_score += score
+                scores_by_new_label_and_seed_label[user][seed_hashtag] = score
+                if score > max_score:
+                    max_score = score
+                    max_label = seed_hashtag
+            total_scores[user] = total_score
+            max_scores[user] = {'label':max_label, 'score':max_score}
 
         for hashtag, hashtag_tweets in self._new_by_hashtag.items():
-            total_scores[hashtag] = 0.0
+            scores_by_new_label_and_seed_label[hashtag] = {}
+            total_score = 0.0
+            for seed_user, seed_tweets in self._seed_by_user.items():
+                score = self.score(hashtag_tweets, seed_tweets)
+                total_score += score
+                scores_by_new_label_and_seed_label[hashtag][seed_user] = score
+                if score > max_score:
+                    max_score = score
+                    max_label = seed_user
             for seed_hashtag, seed_tweets in self._seed_by_hashtag.items():
                 score = self.score(hashtag_tweets, seed_tweets)
-                total_scores[hashtag] += score
-                scores_by_seed_hashtag[seed_hashtag] = score
+                total_score += score
+                scores_by_new_label_and_seed_label[hashtag][seed_hashtag] = score
+                if score > max_score:
+                    max_score = score
+                    max_label = seed_hashtag
+            total_scores[hashtag] = total_score
+            max_scores[hashtag] = {'label':max_label, 'score':max_score}
 
         print('Scoring results:')
         for label, score in total_scores.items():
-            print('label: {} score: {}'.format(label, score))
+            max_score = max_scores[label]
+            print('label: {} score: {} Most related label: {} score: {}'.
+                  format(label, score, max_score['label'], max_score['score']))
 
     def score(self, new_tweets, seed_tweets):
         score = 0.0
