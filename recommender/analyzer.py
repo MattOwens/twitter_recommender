@@ -8,6 +8,9 @@ import math
 date_format = '%a %b %d %H:%M:%S %z %Y'
 
 # Tweet preparation
+with open(os.path.join('recommender','lemur-stopwords.txt')) as f:
+    stopwords = [x for x in f]
+
 tok = metapy.analyzers.ICUTokenizer(suppress_tags=True)
 tok = metapy.analyzers.LowercaseFilter(tok)
 tok = metapy.analyzers.ListFilter(tok, os.path.join('recommender','lemur-stopwords.txt'), metapy.analyzers.ListFilter.Type.Reject)
@@ -19,8 +22,8 @@ class TweetAnalyzer: # come up with better name
 
     def __init__(self, loader, seed_users, seed_hashtags):
         self._loader = loader
-        self._seed_users = seed_users
-        self._seed_hashtags = seed_hashtags
+        self._seed_users = [x.lower() for x in seed_users]
+        self._seed_hashtags = [x.lower() for x in seed_hashtags]
         self._seed_by_user = {}
         self._seed_by_hashtag = {}
         self._new_by_user = {}
@@ -56,22 +59,24 @@ class TweetAnalyzer: # come up with better name
         # intentionally duplicates tweets - will help with similarity when we have multiple hashtags in the same tweet
         # or when a user we care about uses a hashtag we care about
         print('updating corpus')
-        for user in by_user:
+        for user, tweets in by_user.items():
+            user = user.lower() # important
             user_tweets = []
 
-            for tweet in by_user[user]:
+            for tweet in tweets:
                 text = self._prepare_tweet_text(tweet)
-                label = tweet['user']['screen_name']
+                label = user
                 timestamp = datetime.datetime.strptime(tweet['created_at'], date_format).timestamp()
                 user_tweets.append({'text':text,'label':label,'timestamp':timestamp})
 
             self._add_user_tweets(user, user_tweets)
 
-        for hashtag in by_hashtag:
+        for hashtag, tweets in by_hashtag.items():
+            hashtag = hashtag.lower()
             hashtag_tweets = []
             label = '#{}'.format(hashtag)
 
-            for tweet in by_hashtag[hashtag]:
+            for tweet in tweets:
                 text = self._prepare_tweet_text(tweet)
                 timestamp = datetime.datetime.strptime(tweet['created_at'], date_format).timestamp()
                 hashtag_tweets.append({'text':text,'label':label,'timestamp':timestamp})
@@ -105,7 +110,14 @@ class TweetAnalyzer: # come up with better name
     def _prepare_tweet_text(self, tweet):
         doc = metapy.index.Document()
         doc.content(tweet['full_text'] if 'full_text' in tweet else tweet['text'])
+        # tok = metapy.analyzers.ICUTokenizer(suppress_tags=True)
+        # tok = metapy.analyzers.LowercaseFilter(tok)
+        # tok = metapy.analyzers.ListFilter(tok, os.path.join('recommender','lemur-stopwords.txt'), # hopefully this doesn't reread every time
+        #                                   metapy.analyzers.ListFilter.Type.Reject)
+        # tok = metapy.analyzers.Porter2Filter(tok)
+        # analyzer = metapy.analyzers.NGramWordAnalyzer(1, tok)
         return analyzer.analyze(doc)
+
 
     def _run_recommendations(self):
         print('Running recommendations')
@@ -113,17 +125,22 @@ class TweetAnalyzer: # come up with better name
 
         total_scores = {}
         max_scores = {}
+        num_tweets = {}
 
         for user, user_tweets in self._new_by_user.items():
             scores_by_new_label_and_seed_label[user] = {}
 
             total_score = 0.0
+            num_tweets[user] = len(user_tweets)
             max_score = -1
             max_label = ''
 
             for seed_user, seed_tweets in self._seed_by_user.items():
                 score = self.score(user_tweets, seed_tweets)
+                #if score < 0:
+
                 total_score += score
+                print(user, ' ', score, ' ', seed_user, ' ', total_score)
                 scores_by_new_label_and_seed_label[user][seed_user] = score
                 if score > max_score:
                     max_score = score
@@ -131,7 +148,10 @@ class TweetAnalyzer: # come up with better name
 
             for seed_hashtag, seed_tweets in self._seed_by_hashtag.items():
                 score = self.score(user_tweets, seed_tweets)
+                #if score < 0:
+
                 total_score += score
+                print(user, ' ', score, ' ', seed_hashtag, ' ', total_score)
                 scores_by_new_label_and_seed_label[user][seed_hashtag] = score
                 if score > max_score:
                     max_score = score
@@ -141,17 +161,26 @@ class TweetAnalyzer: # come up with better name
 
         for hashtag, hashtag_tweets in self._new_by_hashtag.items():
             scores_by_new_label_and_seed_label[hashtag] = {}
+            num_tweets[hashtag] = len(hashtag_tweets)
             total_score = 0.0
+            max_score = -1
+            max_label = ''
+
             for seed_user, seed_tweets in self._seed_by_user.items():
                 score = self.score(hashtag_tweets, seed_tweets)
+                #if score < 0:
+
                 total_score += score
+                print(hashtag, ' ', score, ' ', seed_user, ' ', total_score)
                 scores_by_new_label_and_seed_label[hashtag][seed_user] = score
                 if score > max_score:
                     max_score = score
                     max_label = seed_user
             for seed_hashtag, seed_tweets in self._seed_by_hashtag.items():
                 score = self.score(hashtag_tweets, seed_tweets)
+                #if score < 0:
                 total_score += score
+                print(hashtag, ' ', score, ' ', seed_hashtag, ' ', total_score)
                 scores_by_new_label_and_seed_label[hashtag][seed_hashtag] = score
                 if score > max_score:
                     max_score = score
@@ -162,8 +191,8 @@ class TweetAnalyzer: # come up with better name
         print('Scoring results:')
         for label, score in total_scores.items():
             max_score = max_scores[label]
-            print('label: {} score: {} Most related label: {} score: {}'.
-                  format(label, score, max_score['label'], max_score['score']))
+            print('label: {} score: {} Most related label: {} score: {} num_tweets: {}'.
+                  format(label, score, max_score['label'], max_score['score'], num_tweets[label]))
 
     def score(self, new_tweets, seed_tweets):
         score = 0.0
@@ -172,13 +201,17 @@ class TweetAnalyzer: # come up with better name
                 score += self._score_pair(new_tweet, seed_tweet)
 
         # I think this should normalize correctly. I'll think about it when I'm less tired
-        return score/(len(new_tweets)*len(seed_tweets))
+        return score #/(len(new_tweets)*len(seed_tweets))
 
     def _score_pair(self, a, b):
-        dot_product = self._dict_dot_product(a['text'], b['text'])
+        similarity = self._cosine_similarity(a['text'], b['text'])
         time_multiplier = 1 / (math.log(self._update_timestamp - a['timestamp']) *
                                math.log(self._update_timestamp - b['timestamp']))
-        return dot_product * time_multiplier
+        #print(self._update_timestamp - a['timestamp'], ' ', self._update_timestamp - b['timestamp'], ' ', time_multiplier)
+        return similarity * time_multiplier
+
+    def _cosine_similarity(self, a, b):
+        return self._dict_dot_product(a, b)/ (self._dict_norm(a) * self._dict_norm(b))
 
     def _dict_dot_product(self, a, b):
         total = 0.0
@@ -186,3 +219,9 @@ class TweetAnalyzer: # come up with better name
             if word in b:
                 total += count * b[word]
         return total
+
+    def _dict_norm(self, a):
+        total = 0
+        for term, value in a.items():
+            total += value*value
+        return math.sqrt(total)
