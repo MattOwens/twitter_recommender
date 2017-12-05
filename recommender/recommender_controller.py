@@ -1,5 +1,6 @@
 from recommender import new_tweet_loader, analyzer, kafka_tweet_receiver
 import logging
+import time
 
 class RecommenderController:
 
@@ -12,7 +13,7 @@ class RecommenderController:
         self._kafka_receiver.start()
 
     def update(self):
-        logging.log(logging.INFO, 'Updating recommendations')
+        logging.log(logging.INFO, '---------TIMER ELAPSED, TAKING SNAPSHOT----------')
 
         results = self._tweet_analyzer.update_analysis()
         for result in results:

@@ -25,12 +25,14 @@ if __name__ == "__main__":
     users = seed['SeedUsers'].split(',')
     hashtags = seed['SeedHashtags'].split(',')
 
+    controller_conifg = config['CONTROLLER']
+    refresh_period = int(controller_conifg['RefreshPeriod'])
+
     controller = recommender_controller.RecommenderController(users, hashtags)
     controller.start()
 
     twitterdata.load_config(users, hashtags)
 
-    time.sleep(30)
-
-    logging.log(logging.INFO, '---------TIMER ELAPSED, TAKING SNAPSHOT----------')
-    controller.update()
+    while True:
+        time.sleep(refresh_period)
+        controller.update()
