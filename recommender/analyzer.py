@@ -53,12 +53,12 @@ class TweetAnalyzer: # come up with better name
         print('Hashtags used in this snapshot: ', hashtags_used)
 
         self._update_corpus(by_user, by_hashtag)
-        self._run_recommendations()
+        return self._run_recommendations()
 
     def _update_corpus(self, by_user, by_hashtag):
         # intentionally duplicates tweets - will help with similarity when we have multiple hashtags in the same tweet
         # or when a user we care about uses a hashtag we care about
-        print('updating corpus')
+        
         for user, tweets in by_user.items():
             user = user.lower() # important
             user_tweets = []
@@ -120,7 +120,6 @@ class TweetAnalyzer: # come up with better name
 
 
     def _run_recommendations(self):
-        print('Running recommendations')
         scores_by_new_label_and_seed_label = {}
 
         total_scores = {}
@@ -137,62 +136,61 @@ class TweetAnalyzer: # come up with better name
 
             for seed_user, seed_tweets in self._seed_by_user.items():
                 score = self.score(user_tweets, seed_tweets)
-                #if score < 0:
-
                 total_score += score
-                print(user, ' ', score, ' ', seed_user, ' ', total_score)
                 scores_by_new_label_and_seed_label[user][seed_user] = score
+
                 if score > max_score:
                     max_score = score
                     max_label = seed_user
 
             for seed_hashtag, seed_tweets in self._seed_by_hashtag.items():
                 score = self.score(user_tweets, seed_tweets)
-                #if score < 0:
-
                 total_score += score
-                print(user, ' ', score, ' ', seed_hashtag, ' ', total_score)
                 scores_by_new_label_and_seed_label[user][seed_hashtag] = score
+
                 if score > max_score:
                     max_score = score
                     max_label = seed_hashtag
+
             total_scores[user] = total_score
             max_scores[user] = {'label':max_label, 'score':max_score}
 
         for hashtag, hashtag_tweets in self._new_by_hashtag.items():
             scores_by_new_label_and_seed_label[hashtag] = {}
-            num_tweets[hashtag] = len(hashtag_tweets)
+
             total_score = 0.0
+            num_tweets[hashtag] = len(hashtag_tweets)
             max_score = -1
             max_label = ''
 
             for seed_user, seed_tweets in self._seed_by_user.items():
                 score = self.score(hashtag_tweets, seed_tweets)
-                #if score < 0:
-
                 total_score += score
-                print(hashtag, ' ', score, ' ', seed_user, ' ', total_score)
                 scores_by_new_label_and_seed_label[hashtag][seed_user] = score
+
                 if score > max_score:
                     max_score = score
                     max_label = seed_user
+
             for seed_hashtag, seed_tweets in self._seed_by_hashtag.items():
                 score = self.score(hashtag_tweets, seed_tweets)
-                #if score < 0:
                 total_score += score
-                print(hashtag, ' ', score, ' ', seed_hashtag, ' ', total_score)
                 scores_by_new_label_and_seed_label[hashtag][seed_hashtag] = score
+
                 if score > max_score:
                     max_score = score
                     max_label = seed_hashtag
+
             total_scores[hashtag] = total_score
             max_scores[hashtag] = {'label':max_label, 'score':max_score}
 
-        print('Scoring results:')
+        results = []
         for label, score in total_scores.items():
             max_score = max_scores[label]
-            print('label: {} score: {} Most related label: {} score: {} num_tweets: {}'.
-                  format(label, score, max_score['label'], max_score['score'], num_tweets[label]))
+            tweet_num = num_tweets[label]
+            results.append({'label': label, 'score': score, 'max_score_label' : max_score['label'],
+                            'max_score' : max_score['score'], 'num_tweets': tweet_num})
+        return results
 
     def score(self, new_tweets, seed_tweets):
         score = 0.0
@@ -200,14 +198,12 @@ class TweetAnalyzer: # come up with better name
             for seed_tweet in seed_tweets:
                 score += self._score_pair(new_tweet, seed_tweet)
 
-        # I think this should normalize correctly. I'll think about it when I'm less tired
-        return score #/(len(new_tweets)*len(seed_tweets))
+        return score/len(new_tweets)
 
     def _score_pair(self, a, b):
         similarity = self._cosine_similarity(a['text'], b['text'])
         time_multiplier = 1 / (math.log(self._update_timestamp - a['timestamp']) *
                                math.log(self._update_timestamp - b['timestamp']))
-        #print(self._update_timestamp - a['timestamp'], ' ', self._update_timestamp - b['timestamp'], ' ', time_multiplier)
         return similarity * time_multiplier
 
     def _cosine_similarity(self, a, b):

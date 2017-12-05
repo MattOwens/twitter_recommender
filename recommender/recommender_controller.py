@@ -1,5 +1,5 @@
 from recommender import new_tweet_loader, analyzer, kafka_tweet_receiver
-
+import logging
 
 class RecommenderController:
 
@@ -12,4 +12,10 @@ class RecommenderController:
         self._kafka_receiver.start()
 
     def update(self):
-        self._tweet_analyzer.update_analysis()
+        logging.log(logging.INFO, 'Updating recommendations')
+
+        results = self._tweet_analyzer.update_analysis()
+        for result in results:
+            print('label: {} score: {} max_score_label: {} max_score: {} num_tweets: {}'.format(
+                  result['label'], result['score'],
+                  result['max_score_label'], result['max_score'], result['num_tweets']))
