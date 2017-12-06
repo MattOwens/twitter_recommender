@@ -86,24 +86,24 @@ class TweetAnalyzer: # come up with better name
     def _add_user_tweets(self, user, tweets):
         if user in self._seed_users:
             if user in self._seed_by_user:
-                self._seed_by_user[user].append(tweets)
+                self._seed_by_user[user] = self._seed_by_user[user] + tweets
             else:
                 self._seed_by_user[user] = tweets
         else:
             if user in self._new_by_user:
-                self._new_by_user[user].append(tweets)
+                self._new_by_user[user] = self._new_by_user[user] + tweets
             else:
                 self._new_by_user[user] = tweets
 
     def _add_hashtag_tweets(self, hashtag, tweets):
         if hashtag in self._seed_hashtags:
             if hashtag in self._seed_by_hashtag:
-                self._seed_by_hashtag[hashtag].append(tweets)
+                self._seed_by_hashtag[hashtag] = self._seed_by_hashtag[hashtag] + tweets
             else:
                 self._seed_by_hashtag[hashtag] = tweets
         else:
             if hashtag in self._new_by_hashtag:
-                self._new_by_hashtag[hashtag].append(tweets)
+                self._new_by_hashtag[hashtag] = self._new_by_hashtag[hashtag] + tweets
             else:
                 self._new_by_hashtag[hashtag] = tweets
 
@@ -201,6 +201,7 @@ class TweetAnalyzer: # come up with better name
         return score/len(new_tweets)
 
     def _score_pair(self, a, b):
+        print(a, b)
         similarity = self._cosine_similarity(a['text'], b['text'])
         time_multiplier = 1 / (math.log(self._update_timestamp - a['timestamp']) *
                                math.log(self._update_timestamp - b['timestamp']))

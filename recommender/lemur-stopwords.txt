@@ -429,3 +429,8 @@ your
 yours
 yourself
 yourselves
+http
+https
+t.co
+#
+@
