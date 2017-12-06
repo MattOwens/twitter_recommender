@@ -31,3 +31,6 @@ def subscribe_user(user):
 def subscribe_hashtag(hashtag):
     batch.load_hashtag_tweets(hashtag)
     stream.add_hashtag(hashtag)
+
+def give_feedback(feedback):
+    print('Given feedback')

@@ -201,7 +201,6 @@ class TweetAnalyzer: # come up with better name
         return score/len(new_tweets)
 
     def _score_pair(self, a, b):
-        print(a, b)
         similarity = self._cosine_similarity(a['text'], b['text'])
         time_multiplier = 1 / (math.log(self._update_timestamp - a['timestamp']) *
                                math.log(self._update_timestamp - b['timestamp']))
