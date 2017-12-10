@@ -10,7 +10,6 @@ class KafkaResultListener(threading.Thread):
         self._consumer = KafkaConsumer(bootstrap_servers='localhost:9092', value_deserializer=self.decode_to_json)
         self._feedback_method = feedback_method
 
-
     def run(self):
         logging.log(logging.INFO, 'Tweet Recorder starting')
 

@@ -32,5 +32,16 @@ def subscribe_hashtag(hashtag):
     batch.load_hashtag_tweets(hashtag)
     stream.add_hashtag(hashtag)
 
+
 def give_feedback(feedback):
     print('Given feedback')
+    stream.start_batch_update()
+    for label in feedback:
+        if label.startswith('#') and label not in stream.hashtags:
+            print('subscribing to hashtag ', label)
+            subscribe_hashtag(label)
+        elif label not in stream.usernames:
+            print('Subscribing to user ', label)
+            subscribe_user(label)
+
+    stream.finish_batch_update()
