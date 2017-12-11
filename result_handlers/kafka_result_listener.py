@@ -32,7 +32,7 @@ class KafkaResultListener(threading.Thread):
         feedback = []
         for result in results:
             feedback.append(result['label'])
-            print('{}. label: {} score: {} max_score_label: {} max_score: {} num_tweets: {}'.format(
+            print('{}. label: {} score: {} max_score_label: {} max_score: {} num_tweets: {}'.format(-
                   result['rank'], result['label'], result['score'],
                   result['max_score_label'], result['max_score'], result['num_tweets']))
 

@@ -110,12 +110,7 @@ class TweetAnalyzer: # come up with better name
     def _prepare_tweet_text(self, tweet):
         doc = metapy.index.Document()
         doc.content(tweet['full_text'] if 'full_text' in tweet else tweet['text'])
-        # tok = metapy.analyzers.ICUTokenizer(suppress_tags=True)
-        # tok = metapy.analyzers.LowercaseFilter(tok)
-        # tok = metapy.analyzers.ListFilter(tok, os.path.join('recommender','lemur-stopwords.txt'), # hopefully this doesn't reread every time
-        #                                   metapy.analyzers.ListFilter.Type.Reject)
-        # tok = metapy.analyzers.Porter2Filter(tok)
-        # analyzer = metapy.analyzers.NGramWordAnalyzer(1, tok)
+
         return analyzer.analyze(doc)
 
 
@@ -198,7 +193,9 @@ class TweetAnalyzer: # come up with better name
             for seed_tweet in seed_tweets:
                 score += self._score_pair(new_tweet, seed_tweet)
 
-        return score/len(new_tweets)
+        # Make it so low tweet numbers aren't completely buried, but there's some value in having many
+        # tweets for a label. Labels with 1 tweet are divided by 1.
+        return score/math.log(len(new_tweets) - 1 + math.e)
 
     def _score_pair(self, a, b):
         similarity = self._cosine_similarity(a['text'], b['text'])
