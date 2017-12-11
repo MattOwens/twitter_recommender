@@ -24,95 +24,48 @@ class TweetAnalyzer: # come up with better name
         self._loader = loader
         self._seed_users = [x.lower() for x in seed_users]
         self._seed_hashtags = [x.lower() for x in seed_hashtags]
-        self._seed_by_user = {}
-        self._seed_by_hashtag = {}
-        self._new_by_user = {}
-        self._new_by_hashtag = {}
+        self._seed_tweets = {}
+        self._new_tweets = {}
 
     def update_analysis(self):
         self._update_timestamp = time.time()
         snapshot = self._loader.get_snapshot()
         all_tweets = snapshot[0]
-        by_user = snapshot[1]
-        by_hashtag = snapshot[2]
 
-        # first pull out hashtags and user mentions so we know what to look at next
-        users_mentioned = set()
-        hashtags_used = set()
-
-        for tweet in all_tweets:
-            mentions = tweet['entities']['user_mentions']
-            for mention in mentions:
-                users_mentioned.add(mention['id'])
-            hashtags = tweet['entities']['hashtags']
-
-            for hashtag in hashtags:
-                hashtags_used.add('#{}'.format(hashtag['text']))
-
-        print('Users mentioned in this snapshot: ', users_mentioned)
-        print('Hashtags used in this snapshot: ', hashtags_used)
-
-        self._update_corpus(by_user, by_hashtag)
+        self._update_corpus(all_tweets)
         return self._run_recommendations()
 
-    def _update_corpus(self, by_user, by_hashtag):
+    def _update_corpus(self, tweets):
         # intentionally duplicates tweets - will help with similarity when we have multiple hashtags in the same tweet
         # or when a user we care about uses a hashtag we care about
-        
-        for user, tweets in by_user.items():
-            user = user.lower() # important
-            user_tweets = []
 
-            for tweet in tweets:
-                text = self._prepare_tweet_text(tweet)
-                label = user
-                timestamp = datetime.datetime.strptime(tweet['created_at'], date_format).timestamp()
-                user_tweets.append({'text':text,'label':label,'timestamp':timestamp})
+        for tweet in tweets:
+            user = tweet['user']['screen_name'].lower()
+            timestamp = datetime.datetime.strptime(tweet['created_at'], date_format).timestamp()
+            text = self._prepare_tweet_text(tweet)
+            self._add_tweet({'text':text, 'label':user, 'timestamp':timestamp})
 
-            self._add_user_tweets(user, user_tweets)
+            for entity in tweet['entities']['hashtags']:
+                hashtag = entity['text'].lower()
+                self._add_tweet({'text':text, 'label':'#{}'.format(hashtag), 'timestamp':timestamp})
 
-        for hashtag, tweets in by_hashtag.items():
-            hashtag = hashtag.lower()
-            hashtag_tweets = []
-            label = '#{}'.format(hashtag)
+    def _add_tweet(self, tweet):
+        label = tweet['label']
 
-            for tweet in tweets:
-                text = self._prepare_tweet_text(tweet)
-                timestamp = datetime.datetime.strptime(tweet['created_at'], date_format).timestamp()
-                hashtag_tweets.append({'text':text,'label':label,'timestamp':timestamp})
-
-            self._add_hashtag_tweets(label, hashtag_tweets)
-
-    def _add_user_tweets(self, user, tweets):
-        if user in self._seed_users:
-            if user in self._seed_by_user:
-                self._seed_by_user[user] = self._seed_by_user[user] + tweets
-            else:
-                self._seed_by_user[user] = tweets
+        if label in self._seed_users or label in self._seed_hashtags:
+            if label not in self._seed_tweets:
+                self._seed_tweets[label] = []
+            self._seed_tweets[label].append(tweet)
         else:
-            if user in self._new_by_user:
-                self._new_by_user[user] = self._new_by_user[user] + tweets
-            else:
-                self._new_by_user[user] = tweets
-
-    def _add_hashtag_tweets(self, hashtag, tweets):
-        if hashtag in self._seed_hashtags:
-            if hashtag in self._seed_by_hashtag:
-                self._seed_by_hashtag[hashtag] = self._seed_by_hashtag[hashtag] + tweets
-            else:
-                self._seed_by_hashtag[hashtag] = tweets
-        else:
-            if hashtag in self._new_by_hashtag:
-                self._new_by_hashtag[hashtag] = self._new_by_hashtag[hashtag] + tweets
-            else:
-                self._new_by_hashtag[hashtag] = tweets
+            if label not in self._new_tweets:
+                self._new_tweets[label] = []
+            self._new_tweets[label].append(tweet)
 
     def _prepare_tweet_text(self, tweet):
         doc = metapy.index.Document()
         doc.content(tweet['full_text'] if 'full_text' in tweet else tweet['text'])
 
         return analyzer.analyze(doc)
-
 
     def _run_recommendations(self):
         scores_by_new_label_and_seed_label = {}
@@ -121,63 +74,25 @@ class TweetAnalyzer: # come up with better name
         max_scores = {}
         num_tweets = {}
 
-        for user, user_tweets in self._new_by_user.items():
-            scores_by_new_label_and_seed_label[user] = {}
+        for label, new_tweets in self._new_tweets.items():
+            scores_by_new_label_and_seed_label[label] = {}
 
             total_score = 0.0
-            num_tweets[user] = len(user_tweets)
+            num_tweets[label] = len(new_tweets)
             max_score = -1
             max_label = ''
 
-            for seed_user, seed_tweets in self._seed_by_user.items():
-                score = self.score(user_tweets, seed_tweets)
+            for seed_label, seed_tweets in self._seed_tweets.items():
+                score = self.score(new_tweets, seed_tweets)
                 total_score += score
-                scores_by_new_label_and_seed_label[user][seed_user] = score
+                scores_by_new_label_and_seed_label[label][seed_label] = score
 
                 if score > max_score:
                     max_score = score
-                    max_label = seed_user
+                    max_label = seed_label
 
-            for seed_hashtag, seed_tweets in self._seed_by_hashtag.items():
-                score = self.score(user_tweets, seed_tweets)
-                total_score += score
-                scores_by_new_label_and_seed_label[user][seed_hashtag] = score
-
-                if score > max_score:
-                    max_score = score
-                    max_label = seed_hashtag
-
-            total_scores[user] = total_score
-            max_scores[user] = {'label':max_label, 'score':max_score}
-
-        for hashtag, hashtag_tweets in self._new_by_hashtag.items():
-            scores_by_new_label_and_seed_label[hashtag] = {}
-
-            total_score = 0.0
-            num_tweets[hashtag] = len(hashtag_tweets)
-            max_score = -1
-            max_label = ''
-
-            for seed_user, seed_tweets in self._seed_by_user.items():
-                score = self.score(hashtag_tweets, seed_tweets)
-                total_score += score
-                scores_by_new_label_and_seed_label[hashtag][seed_user] = score
-
-                if score > max_score:
-                    max_score = score
-                    max_label = seed_user
-
-            for seed_hashtag, seed_tweets in self._seed_by_hashtag.items():
-                score = self.score(hashtag_tweets, seed_tweets)
-                total_score += score
-                scores_by_new_label_and_seed_label[hashtag][seed_hashtag] = score
-
-                if score > max_score:
-                    max_score = score
-                    max_label = seed_hashtag
-
-            total_scores[hashtag] = total_score
-            max_scores[hashtag] = {'label':max_label, 'score':max_score}
+            total_scores[label] = total_score
+            max_scores[label] = {'label':max_label, 'score':max_score}
 
         results = []
         for label, score in total_scores.items():
