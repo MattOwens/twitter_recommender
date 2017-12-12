@@ -1,3 +1,4 @@
+
 class NewTweetLoader:
 
     def __init__(self):
@@ -40,3 +41,5 @@ class NewTweetLoader:
                 self._tweets_by_hashtag[hashtag] = [tweet]
             else:
                 self._tweets_by_hashtag[hashtag].append(tweet)
+
+instance = NewTweetLoader()

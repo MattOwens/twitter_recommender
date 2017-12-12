@@ -1,5 +1,6 @@
 import tweepy
-from twitterdata import hidden_keys, batch_loader, stream_loader, test_tweet_consumer
+import sys
+from twitterdata import hidden_keys, batch_loader, stream_loader, kafka_tweet_sender, direct_tweet_sender
 
 auth = tweepy.OAuthHandler(hidden_keys.consumer_key, hidden_keys.consumer_secret)
 auth.set_access_token(hidden_keys.access_token, hidden_keys.access_secret)
@@ -7,11 +8,19 @@ auth.set_access_token(hidden_keys.access_token, hidden_keys.access_secret)
 api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True,
                  parser = tweepy.parsers.JSONParser())
 
-batch = batch_loader.BatchTweetLoader(api)
-stream = stream_loader.StreamLoader(api)
+batch = None
+stream = None
+
+this = sys.modules[__name__]
 
 
-def load_config(seed_users, seed_hashtags):
+def load_config(seed_users, seed_hashtags, send_tweet_name):
+    send_tweet = direct_tweet_sender.send_tweet
+    if send_tweet_name == 'Kafka':
+        send_tweet = kafka_tweet_sender.send_tweet
+    this.batch = batch_loader.BatchTweetLoader(api, send_tweet)
+    this.stream = stream_loader.StreamLoader(api, send_tweet)
+
     stream.start_batch_update()
 
     for user in seed_users:

@@ -1,18 +1,17 @@
 import tweepy
 import json
 import logging
-import twitterdata.tweet_sender as sender
 
 
 class StreamLoader():
 
-    def __init__(self, api):
+    def __init__(self, api, send_tweet):
         self.api = api
         self.usernames = []
         self.user_ids = []
         self.hashtags = []
         self._requests_paused = False
-        self.stream_listener = TwitterStreamListener()
+        self.stream_listener = TwitterStreamListener(send_tweet)
         self.stream = tweepy.Stream(auth=self.api.auth, listener=self.stream_listener, parser=tweepy.parsers.JSONParser())
 
     def start_batch_update(self):
@@ -49,18 +48,17 @@ class StreamLoader():
 
 class TwitterStreamListener(tweepy.StreamListener):
 
-    def __init__(self):
+    def __init__(self, send_tweet):
         tweepy.StreamListener.__init__(self)
         self._user_ids = []
         self._hashtags = []
+        self.send_tweet = send_tweet
 
     def on_data(self, data):
-        #print("Hey I received a streamed tweet! on_data")
-        #print(json.loads(tweet_data))
         relevant = self._is_relevant(json.loads(data))
 
         if relevant:
-            sender.send_tweet(json.loads(data))
+            self.send_tweet(json.loads(data))
 
     def on_error(self, status_code):
         logging.error('Error in streaming handler: Status code {}'.format(status_code))

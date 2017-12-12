@@ -1,12 +1,13 @@
-import twitterdata.tweet_sender as sender
+import twitterdata.kafka_tweet_sender as sender
 
 tweets_to_get = 100
 
 
 class BatchTweetLoader:
 
-    def __init__(self, api):
+    def __init__(self, api, send_tweet):
         self.api = api
+        self.send_tweet = send_tweet
 
     def load_tweets(self, user):
         print('Getting tweets for user', user)
@@ -20,4 +21,4 @@ class BatchTweetLoader:
 
     def _send_tweets(self, tweets):
         for tweet in tweets:
-            sender.send_tweet(tweet)
+            self.send_tweet(tweet)
