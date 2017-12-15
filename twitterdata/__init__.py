@@ -1,9 +1,9 @@
 import tweepy
 import sys
-from twitterdata import hidden_keys, batch_loader, stream_loader, kafka_tweet_sender, direct_tweet_sender
+from twitterdata import keys, batch_loader, stream_loader, kafka_tweet_sender, direct_tweet_sender
 
-auth = tweepy.OAuthHandler(hidden_keys.consumer_key, hidden_keys.consumer_secret)
-auth.set_access_token(hidden_keys.access_token, hidden_keys.access_secret)
+auth = tweepy.OAuthHandler(keys.consumer_key, keys.consumer_secret)
+auth.set_access_token(keys.access_token, keys.access_secret)
 
 api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True,
                  parser = tweepy.parsers.JSONParser())
